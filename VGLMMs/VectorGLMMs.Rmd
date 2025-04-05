@@ -815,7 +815,7 @@ So, now we have $\phi_j$ instead of $\phi$
 \tiny
 
 ```{r, fig.height=5}
-model4 <- gllvm::gllvm(y, X = X, formula = ~NO3, family = "negative.binomial")
+model4 <- gllvm::gllvm(y, X = X, formula = ~NO3, family = "negative.binomial", num.lv = 0)
 gllvm::coefplot(model4)
 ```
 
@@ -882,7 +882,13 @@ When we use random effects, we induce correlation. Here, between site $i$ and $k
 \text{cov}(\textbf{x}_i^\top\symbf{\beta}_j, \textbf{x}_k^\top\symbf{\beta}_j) = \textbf{x}_i^\top\Sigma\textbf{x}_k, \qquad \forall j = 1\ldots m
 \end{equation}
 
-So, $\Sigma$ is a also a measure of how much the community changes from one site to another. Two sites with strong negative correlation are predicted to have different communities, and the same community with strong positive correlation. Thus, we can \textbf{predict} turnover.
+So, $\Sigma$ is a also a measure of how much the community changes from one site to another.
+
+## Turnover
+
+This is a type of intraclass correlation (often found in mixed-effects models) \newline
+
+Two sites with strong negative correlation are predicted to have different communities, and the same community with strong positive correlation. Thus, we can \textbf{predict} turnover.
 
 ## Random effects \texttt{R} formula in \texttt{gllvm}
 
@@ -1043,15 +1049,14 @@ X <- data.frame(sapply(X,function(x)if(is.numeric(x)){scale(x)}else{x}, simplify
 ```
 
 ```{r, test}
-library(gllvm)
-model <- gllvm(y, X = X, formula = ~(0+NO3|1) + (Water_Type|1), beta0com = TRUE, family = "negative.binomial", num.lv = 0)
+model5 <- gllvm::gllvm(y, X = X, formula = ~(0+NO3|1) + (Water_Type|1), beta0com = TRUE, family = "negative.binomial", num.lv = 0)
 ```
 
 ## Wetlands: summary
 
 \tiny
 ```{r, echo = FALSE}
-summary(model)
+summary(model5)
 ```
 
 ## Results: plots
@@ -1061,16 +1066,16 @@ summary(model)
 
 \tiny
 
-```{r, fig.height = 5}
-plot(summary(model))
+```{r, fig.height = 9}
+plot(summary(model5))
 ```
 
 \column{0.5\textwidth}
 
 \tiny
 
-```{r, fig.height = 5}
-randomCoefplot(model)
+```{r, fig.height = 9}
+randomCoefplot(model5)
 ```
 
 
@@ -1083,7 +1088,7 @@ randomCoefplot(model)
 \tiny
 
 ```{r}
-S <- model$params$sigmaB
+S <- model5$params$sigmaB
 x <- matrix(c(0, 1, 0,0,1,1), ncol = 2)
 corrplot::corrplot(cov2cor(t(x)%*%S%*%x))
 ```
