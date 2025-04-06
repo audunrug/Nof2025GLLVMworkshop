@@ -279,11 +279,8 @@ glmer(abundance ~ species + x:species + (0+species|sites), data = data)`
 
 ## Ordination to the rescue
 
-GLLVMs were introduced as a technical solution to this problem
-
-- The species loadings represent correlation of species, for random effect LVs
-- $\epsilon_{ij} \overset{d}{\approx} \symbf{z}_i^\top\symbf{\gamma}_j$
-- The square of species loadings forms the species association matrix: $\symbf{\Sigma} \approx \symbf{\Gamma}\symbf{\Gamma}^\top$
+- GLLVMs were introduced as a technical solution to this problem
+- We represent the covariance matrix with fewer **dimensions**: $\symbf{\Sigma} \approx \symbf{\Gamma}\symbf{\Gamma}^\top$
 
 "The factor analytic solution" because factor analysis \tiny (Spearman, 1904) \normalsize is the precursor of GLLVMs
 
