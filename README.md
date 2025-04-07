@@ -4,7 +4,7 @@ GLLVM Workshop material for the Norwegian Oikos conference in 2025
 # Preliminary schedule
 |Time         |Subject                                                 |
 |-------------|:-------------------------------------------------------|
-|8:30 - 9:00  |Introduction                                            |
+|8:30 - 9:00  |[Introduction](https://github.com/BertvanderVeen/Nof2025GLLVMworkshop/blob/main/Introduction/Introduction.pdf)                                            |
 |9:00 - 10:00 |[Multispecies (Vector) GLM(Ms)](https://github.com/BertvanderVeen/Nof2025GLLVMworkshop/blob/main/VGLMMs/VectorGLMMs.pdf)                           | <!--GLM/Ms, maybe some checking of correlation in residuals ala Zuur, or just general residual diagnostics-->
 |10:00 - 10:15|Break                                                   |
 |10:15 - 11:00|Exercise 1
