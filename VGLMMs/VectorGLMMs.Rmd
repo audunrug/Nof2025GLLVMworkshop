@@ -1,5 +1,6 @@
 ---
-title: "Generalised Linear (Mixed) Models for data of multiple species"
+title: "Generalised Linear (Mixed) Models"
+subtitle: "for data of multiple species"
 institute: "Department of Mathematical Sciences, NTNU"
 author: "Bert van der Veen"
 output: 
@@ -52,13 +53,7 @@ knit_hooks$set(
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Intro
-
-## Who-is-who
-
-## Logstics
-
-- slides, slack
+# Introduction
 
 ## Outline of this session
 
@@ -1075,7 +1070,7 @@ plot(summary(model5))
 \tiny
 
 ```{r, fig.height = 9}
-randomCoefplot(model5)
+gllvm::randomCoefplot(model5)
 ```
 
 
