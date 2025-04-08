@@ -1,6 +1,6 @@
 ---
-title: "GLLVMs A-Å"
-subtitle: "Some inputs into performing a full analysis using GLLVMs"
+title: "GLLVMs from A-Å"
+subtitle: "Using the models in a complete study context"
 institute: "Department of Mathematical Sciences, NTNU"
 author: "Audun Rugstad, Ph.D. candidate"
 date: "April 2025"
@@ -49,6 +49,8 @@ We'll go through the full analysis of an ecological dataset
 
 **Example:** @dou2022: *Influence of environmental variables on macroinvertebrate community structure in Lianhuan Lake*
 
+**Data:** Counts of 74 aquatic invertebrates from 44 lake samples in northern China., with simultaneous measures of 13 physical-chemical properties of the water.
+
 # Formulating the question
 
 ## Formulating the question
@@ -59,7 +61,7 @@ First question: **What is the goal of the analysis?**
 
 -   **Prediction:** Find the model that best predict future observations
 
--   **Explanation:** Investigate causal relationships between explanatory variables and response(s)
+-   **Explanation:** Investigate relationships between explanatory variables and response(s)
 
 ## Prediction
 
@@ -202,7 +204,7 @@ Some factors that can mess up a GLLVM:
 
 -   Predictor variables that are too co-linear
 
--   Several species with very little information on abundances (i.e. zero-inflation)
+-   Several species with very little information on abundances (e.g. zero-inflation)
 
 -   Sites with very little information on abundances
 
@@ -482,6 +484,8 @@ load("mod_nb_1.Rdata")
 plot(mod_lakes_nb)
 ```
 
+\footnotesize
+
 The residual plots indicate that the NB model meets the assumptions of the model better.
 
 ## Model checking: Example
@@ -520,19 +524,6 @@ If we look at the plots of the standard errors for the species loadings, we also
 #| fig-height: 4
 
 plot(mod_lakes_nb$sd$theta) # theta = species coefficients
-```
-
-\normalsize
-
-## What has happened?
-
-If we look at the residual
-
-\footnotesize
-
-```{r}
-sum_mod <- summary(mod_lakes_nb)
-sum_mod$sigma.lv
 ```
 
 \normalsize
@@ -603,8 +594,6 @@ data.frame(Measure=c("cor", "RMSE", "MAE", "MARNE"),
 :::
 :::::
 
-## 
-
 # Making inferences
 
 ## Making inferences with GLLVMs
@@ -647,9 +636,13 @@ We *could* go back and fit the model again without residual LV variation (as a "
 
 **`Coefficients LV predictors:`**
 
+\tiny
+
 ```{r}
 sum_mod$REbcovs
 ```
+
+## Model summary
 
 The most importation predictors seem to be `WT` (water temperature), `PH` (water PH), and `Chla` (chlorophyll A content)
 
@@ -793,7 +786,7 @@ Still extremely high uncertainty
 
 Both models can be argued to be a reasonable, but suggest different drivers of species diversity.
 
--   Still, some indication that PH and water temperature are important factors to look into (stood out in both models)
+-   Still, some indication from both that PH and water temperature are important factors to look into
 
 -   Large uncertainties like this often a feature of negative binomial models
 
@@ -820,3 +813,5 @@ In other words:
 # References
 
 ## References
+
+\tiny
