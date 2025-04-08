@@ -191,7 +191,7 @@ phyloplot(model5, tree = tree)
 and plot the associations due to the environmental variables:
 
 ```{r, fig.width = 15, fig.height = 10}
-# There is a known bug in the package, this next line addresses that
+# There is a known bug in the package v2.0.0-2.0.1, this next line addresses that
 model5$col.eff$colMat <- cov2cor(covMat)
 corrplot::corrplot(getEnvironCor(model5), type = "lower", order = "AOE", diag = FALSE, tl.pos = "l", tl.cex = 0.2, addgrid.col = NA)
 ```
