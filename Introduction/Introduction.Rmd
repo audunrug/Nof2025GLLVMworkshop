@@ -193,7 +193,7 @@ Practical sandwich:
 
 \columnsend
 
-## Resources that cover all kinds of ordination methods
+## Resources that cover all kinds of multivariate methods
 
 (none)
 
@@ -202,6 +202,10 @@ Practical sandwich:
 - There will be some equations
 - \texttt{gllvm} is in active development (some bugs expected, feature requests are very welcome)
 - Report issues at [https://github.com/JenniNiku/gllvm](https://github.com/JenniNiku/gllvm)
+
+\pause
+\centering
+\textcolor{red}{If you can, update your package version}
 
 ## Questions?
 
