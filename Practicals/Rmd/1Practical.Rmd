@@ -1,0 +1,177 @@
+---
+title: "Multispecies Generalised Linear (Mixed-effects) Models"
+author: "Bert van der Veen"
+date: "2025-04-07"
+output: html_document
+---
+
+# Background
+
+In the first lecture, we learned about the basics of fitting models to multispecies data. The models so far included basic Generalised Linear Models (GLM), as well as Vector Generalised Linear Models (VGLM), potentially with random effects (VGLMM). The main difference between the models, is the assumptions that they make. In a GLM, we assume that 1) The distribution is in the exponential family, 2) We have selected the correct link function, 3) We have selected the correct  variance function, 3) There are no outliers that have a large influence on the model,  4) The model is linear on the link scale, 5) Independence of observations, 6) The dispersion parameter is the same for all observations. VGLM(M)s relax assumption 6).
+
+We also discussed the model structure; how we can have effects that are the same for all species, and effects that are species-specific. This is perhaps more of an ecological assumption; it speaks to the process we believe are data to be generated from.
+
+In this exercise, we will use the gllvm R-package to explore its basic functionality for fitting VGLMMs. 
+
+## Data
+
+We will explore VGLMMs using a dataset of Macrozoobenthos, also used for demonstration in the third presentation of the workshop. The data is available in the github repository as "Wadden", in the data folder. We can read it in as follows:
+
+```{r}
+Yb <- read.csv("../../data/waddenY2.csv")[, -c(1:2)]
+X <- read.csv("../../data/waddenX.csv")
+```
+
+you might have to change the exact working directory to make it work for your exact set-up. A good place to start an analysis, is to first examine the data a bit more, so we know what we are dealing with:
+
+```{r}
+head(Yb)
+dim(Yb)
+```
+
+The data are biomass, and there are 162 rows and 58 columns (species). For the same study system there are also counts ("Y.csv") on the github. Because we will be modelling species-specific responses, we should ensure that each species has enough observations in the data:
+
+```{r}
+table(colSums(ifelse(Yb==0,0,1))>3)
+```
+From the 58 species, 22 have less than three observations! This is very common is ecological data, especially if there is high turnover between the sites, so that species occur in few locations. From a practical standpoint, this is an issue because we cannot accurately estimate multiple species-specific parameters if we have such little data! The only thing that we can do now is to exclude these species. Ideally, we would define our community of species in advance of collecting data, so that we can (sort of) ensure that each species is sufficient sampled relative to the complexity of the model that we want to implement. That is, these species are not necessarily "rare"; they are probably just insufficiently sampled.
+We go ahead and remove species with fewer than 3 observations. Note that this is a pretty liberal threshold; we are effectively drawing lines through our cloud of data points, and we need at least 2 points to draw a line (and ideally many more!).
+
+```{r}
+Yb <- Yb[,colSums(ifelse(Yb==0,0,1))>=3]
+ncol(Yb)
+```
+
+We are left with 39 species, some of which have 3 observations only.
+
+In any case, a strong mean-variance relationship is often an issue in ecological data. For the Tweedie class of models, the variance is given by:
+
+\begin{equation}
+\begin{aligned}
+\text{var}(\textbf{y}_j) &= \sigma^2_j\mu^p\\
+\log\{\text{var}(\textbf{y}_j)\} &= 2\log{\sigma^2_j} + p\log{\mu},
+\end{aligned}
+\end{equation}
+
+so that we assume that the variance is proportional to the mean raised to a power $1<p<2$. This parameter $p$ can be estimated, or it can be fixed to something we decide a-priori.
+We can explore this a little further by plotting the sample variance of each column against its sample mean (inspired by the mvabund R-package):
+
+```{r}
+plot(apply(Yb,2,var)~apply(Yb,2,mean),log="xy", ylab = "var", xlab="mean")
+```
+
+from which we learn that the (log of the) variance seems to have a linear relationship with the log of the mean, as it should to fit a Tweedie model.
+Before model fitting, especially for packages that use numerical optimisation (such as lme4, glmmTMB and also gllvm)  we should center and scale our continuous variables:
+
+```{r}
+X <- data.frame(lapply(X, function(x)if(is.numeric(x)){scale(x)}else{as.factor(x)}))
+X <- X[,colSums(is.na(X))==0] # this data has some NAs that need to be removed..
+```
+
+We should also explore the covariate data a little. The column names:
+
+```{r}
+colnames(X)
+```
+
+There is a repeated design here, indicated by "transect", "station", "island" and perhaps "season". There are also a few environmental variables: "elevation", "TOC", "DIN", "RDP", "Chl.a", and "silt_clay". More information on these is available in the associated article by [Dewenter et al. (2023)](https://onlinelibrary.wiley.com/doi/full/10.1002/ece3.10815). 
+
+## Fitting a model
+
+The gllvm R-package has a bunch of functions, but the most important one is `gllvm`; we use that to actually fit the models. Usually, we are interesting in a certain phenomena that affects our species, which of course now we do not really know much about. However, let's continue with the 'elevation' and 'temperature' variables for now and fit a model. To figure out what goes where in the function, you can look at the help page: `?gllvm`. This also has loads of  information for, e.g., the supported 'families' (response distributions).
+
+```{r}
+library(gllvm)
+model0  <- gllvm(y = Yb, num.lv = 0, family = "tweedie")
+model1 <- gllvm(y = Yb, X = X, num.lv = 0, formula = ~elevation, family = "tweedie")
+```
+
+Here, we use 'Tweedie' as it is the most flexible option for continuous data (with zeros). The `num.lv` arguments defaults to 2 in the package, but we set that to zero now. In the next practicals we will consider latent variable models, but we start out "simple". We fit two models: one with an intercept per species ("model0") as a sanity check, and to compare to. The second ("model1") has the elevation variable; this additionally includes one parameter for elevation per species.
+
+There are functions in the package that you can now use to further explore these models: `plot` for residual diagnostics, `AIC`, `BIC`, or  `anova` for comparing models, and `summary` for extracting basic information. `coefplot` visualizes the species' effects:
+
+```{r}
+coefplot(model1)
+```
+
+This "caterpillar" plot is constructured with estimates (you can get them via `coef(model1, "Xcoef")`) and their confidence intervals (`confint(model1, "Xcoef")`), in case you want to construct a plot yourself!
+
+### Row effects
+
+The nested study design is something that needs to be considered; pseudoreplication can seriously mess-up our results. We can decide to do this with a species-specific random effect, or with a random effect that is the same for all species. You can decide, but here is some code to demonstrate how to do the latter:
+
+```{r}
+model2 <- gllvm(y = Yb, X = X, num.lv = 0, formula = ~elevation, family = "tweedie", 
+                row.eff = ~(1|transect/island), studyDesign = X[,c("transect","island")])
+```
+
+The `row.eff` option was originally added to accommodate study design properties (such as pseudoreplication), but is now much more widely applicable: we can also include random slopes or fixed effects. Either way, the covariates used in `row.eff` must be provided in the `studyDesign` argument, separatel from the covariates used in `formula`. The random effects are present in `model2$params$row.params.random`, while fixed-effect estimates are stored in `model2$params$row.params.fixed` (if we had any). The associated variances are not (yet) displayed in the summary information of the model, but can be accessed via `model2$params$sigma`.
+
+There is no plotting function in the package for these random effects, but we can construct something ourselves using the `coef` and `getPredictErr` functions. For this, we need to note that the above formula expands into two terms: `(1|transect:island)` and `(1|transect)`, so we plot these separately.
+
+```{r, fig.width = 10}
+par(mfrow = c(1,2), mar = c(5, 7, 4, 2))
+
+r0 = coef(model2, "row.params.random") # RE estimates
+pe <- getPredictErr(model2) # RE prediction errors, nested list of length 1 with 2 entries
+
+# first row effect
+r01 <- r0[1:length(pe[[1]][[1]])]
+LI = r01 + pe[[1]][[1]]*qnorm(1-0.95) # Lower prediction interval
+UI = r01 + pe[[1]][[1]]*qnorm(0.95) # Upper prediction interval
+
+plot(x=sort(r01), y = 1:length(r01), yaxt = "n", pch = "x", main = "(1|transect:island)", xlim = c(min(LI), max(UI)), ylab = NA, xlab = "Random effect estimate")
+segments(LI[order(r01)], y0 = 1:length(r01), UI[order(r01)], 1:length(r01))
+abline(v = 0, lty = 1)
+axis(2, at = 1:length(r01), labels = names(sort(r01)), las = 1)
+
+# second row effect
+r02 <- r0[1:length(pe[[1]][[2]])]
+LI = r02 + pe[[1]][[2]]*qnorm(1-0.95) # Lower prediction interval
+UI = r02 + pe[[1]][[2]]*qnorm(0.95) # Upper prediction interval
+
+plot(x=sort(r02), y = 1:length(r02), yaxt = "n", pch = "x", main = "(1|transect:island)", xlim = c(min(LI), max(UI)), ylab = NA, xlab = "Random effect estimate")
+segments(LI[order(r02)], y0 = 1:length(r02), UI[order(r02)], 1:length(r02))
+abline(v = 0, lty = 1)
+axis(2, at = 1:length(r02), labels = gsub("[^:].","",names(sort(r02))), las = 1)
+```
+
+### Random effects
+
+We can also swap the terms for random effects, or use the `row.eff` function if we want random effects that are the same for all species. This follows "standard" lme4-formulation, with some tweaks that should barely be noticeable. So, we can do:
+
+```{r}
+model3 <- gllvm(y = Yb, X = X, num.lv = 0, formula = ~(0+elevation|1), family = "tweedie")
+```
+
+to fit a random slope model. The "species" effect is implicit; as in the fixed-effects formulation, this will estimate one random slope per species, with one variance parameter for the random effect that we can examine using `summary`:
+
+```{r}
+summary(model3)
+```
+
+the random-effects for these are stored in `model2$params$Br`, but we can visualize them using another function:
+
+```{r}
+randomCoefplot(model3)
+```
+
+this plot is constructured with the random effect estimates (retrieved with `Br = coef(model3, "Br")`) and their prediction errors (retrieved via `pe <- getPredictErr(model3)$Br`). Note: if you want to make a plot yourself, you still need to calculate the intervals ourself via `LI = Br + pe*qnorm(1-0.95)` and `UI = Br + pe*qnorm(0.95)`.
+
+**TIP:** if you have many species-specific random effects in the model, add the argument `Ab.struct = "diagonal"` to speed things up.
+
+# Part 1
+
+The goal is for you to get a little more comfortable with the gllvm package, and multispecies modeling.
+
+Here is what I want you to do:
+
+1. Explore the models displayed above; fit them in your own R session and use the different functions available to explore the results. 
+2. After about 15 minutes we will discuss together what we see, and what conclusion we can draw from the results.
+
+# Part 2
+
+1. Fit a few models, ideally variations of what is displayed above. You can also try to fit models to a different dataset (e.g., your own or available in the "data" folder of the github repository)
+2. Try setting `Power = NULL` in the model. The power parameter that controls the Tweedie class is a-priori fixed to 1.1, but is estimated if set to `NULL`
+3. Perform model comparison with `AIC`, `BIC`, `anova`. Discuss in group: do you know the pitfalls with such comparison techniques?
+4. Just generally try to get a feel for how the package works, what functionality is available, and so on.
