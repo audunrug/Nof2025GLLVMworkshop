@@ -705,12 +705,16 @@ Here I will omit traits and LVs for brevity. So our model is:
 
 ## Phylogenetic signal
 
+\vspace{-0.25\baselineskip}
+
   - 1: Fully phylogenetically structured responses
   - 0: Normal ("iid") random effects
   
 When it is 0, it does not mean there is nothing going on.
 
 Absence of phylogenetic signal:
+
+\vspace{-0.25\baselineskip}
 
   - Scale mismatch
   - Evolution moves very fast
@@ -727,6 +731,8 @@ Presence of phylogenetic signal:
 ## Model limitation
 
 This phylogenetic model assumes traits evolve following the Brownian motion model of evolution. This can only generate positive associations. \newline
+
+\vspace*{-\baselineskip}
 
 But, competitive exclusion tells us that species evolve to differentiate resource.
 
