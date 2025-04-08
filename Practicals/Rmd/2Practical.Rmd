@@ -11,7 +11,7 @@ In the second lecture, we learned that JSDMs relax the assumption of species' in
 
 These (residual) correlations are difficult to interpret. They can be caused by species interactions, but are confounded with all other sources of unmeasured variation. For example, if we forget to include an important covariate in the model, this will also result in residual correlations. That makes that the associations are useful for improving prediction, but perhaps not so much for inference?
 
-Technically, JSDMs are models for binary data: presence-absence of species. However, we can generalize this to other data types and responses by keeping the model on the link-scale the same. In the gllvm R-package it is pretty straightforward: we just change the `family` argument to (for example) "Poisson", "ordinal", "beta" or "tweedie" (see `?gllvm`). In this exercise, we will fit JSDMs to ...
+Technically, JSDMs are models for binary data: presence-absence of species. However, we can generalize this to other data types and responses by keeping the model on the link-scale the same. In the gllvm R-package it is pretty straightforward: we just change the `family` argument to (for example) "Poisson", "ordinal", "beta" or "tweedie" (see `?gllvm`). In this exercise, we will fit JSDMs to binary data.
 
 ## Data
 
