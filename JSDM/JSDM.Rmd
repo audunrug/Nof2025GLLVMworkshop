@@ -705,7 +705,7 @@ Here I will omit traits and LVs for brevity. So our model is:
 
 ## Phylogenetic signal
 
-\vspace{-0.25\baselineskip}
+\vspace*{-0.25\baselineskip}
 
   - 1: Fully phylogenetically structured responses
   - 0: Normal ("iid") random effects
@@ -714,7 +714,7 @@ When it is 0, it does not mean there is nothing going on.
 
 Absence of phylogenetic signal:
 
-\vspace{-0.25\baselineskip}
+\vspace*{-0.25\baselineskip}
 
   - Scale mismatch
   - Evolution moves very fast
@@ -722,10 +722,12 @@ Absence of phylogenetic signal:
   - Traits are phylogenetically structured
   - There are other (flexible) terms in the model
   - Model misspecification
+
+\vspace*{-0.25\baselineskip}
   
 Presence of phylogenetic signal:
 
-- Related species have similar "traits" (here: environmental response)
+- Related species have similar "traits" (environmental response)
 - Occupy similar environments
 
 ## Model limitation
