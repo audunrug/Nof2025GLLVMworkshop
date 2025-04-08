@@ -1,0 +1,118 @@
+---
+title: "Model-based ordination"
+author: "Bert van der Veen"
+date: "2025-04-07"
+output: html_document
+---
+
+# Background
+
+In the third lecture, we learned that JSDMs are implemented in the gllvm R-package using a latent variable approach, which also lends itself very wel for ordination. In this setting, latent variable models are a better (parametric) way to do all kinds of ordination, that allow us to use both tools from regression, and for ordination, to do our analysis.
+
+There are three kinds of ordination: unconstrained and constrained ordination, which most people will be familiar with from the literature, or a course in multivariate analysis. Model-based ordination also offers "concurrent ordination", which does unconstrained and constrained ordination simultaneously.
+
+With model-based ordination, we assume that there are underlying **ecological gradients** that have generated the data. These gradients can be represented completely without measured variables (unconstrained ordination), fully with mesaured variables (constrained ordination), or both; assuming that it is difficult to find the right variables to represent the ecological gradient, so that there always may be an unmeasured component.
+
+From a more statistical angle, model-based ordination is a way of fitting complex models to sparse data: we attempt to reduce dimensions of the effects so that we can still fit the models we want, even if we do not have so much data. This is a bit different than "classical" ordination methods, because model-based ordination retains connection with the original data, and therefor can also visualize species-specific responses (i.e., we have a lot more information from the model than just an ordination plot).
+
+## Data
+
+We will explore fitting model-based ordination using a (restoration) vegetation dataset by [Mehlhoop et al. (2022)](https://onlinelibrary.wiley.com/doi/full/10.1111/avsc.12673). We can read it in as follows:
+
+```{r}
+Y <- read.csv("../../data/roadY.csv")[,-1]
+Y <- Y/100
+X <- read.csv("../../data/roadX.csv")[,-1]
+X$site <- as.factor(X$site)
+X <- data.frame(lapply(X, function(x)if(is.numeric(x)){scale(x)}else{as.factor(x)}))
+```
+
+you might have to change the exact working directory to make it work for your exact set-up. A good place to start an analysis, is to first examine the data a bit more, so we know what we are dealing with:
+
+```{r}
+dim(Y)
+colnames(X)
+```
+
+The response data are percentage cover, and there are 282 rows and 188 columns (species). We are mostly reduced dimensions (ordination) here, and could choose to retain also species with few observations. The main issue with that, is that it makes for very poor ordination plots: species that have few observations are usually placed at the extremes of the ordination, very far away from everything else. That is because we have probably observed a species at the edge of its distributional limits, and on the outskirts of the environment that most of the species in our data are comfortable with. There are other (technical) solutions to this, which we do not have time for to go into as part of this exercise (ask if interested), so we will just exclude some species here:
+
+```{r}
+Y <- Y[,colSums(ifelse(Y==0,0,1))>3]
+ncol(Y)
+```
+
+We ended up excluding 90 species that were observed less than 3 times. There are a few covariates: "method": the restoration treatment (pn: planted natural, nat: naturally re-vegetated, ref: pristine vegetation, seed: seeded plots), dis_int_veg": distance to road, "caco": canopy cover, "slope", "grain_size_stand_f": soil grain size, "years_since_n": time since restoration, "gf": ecosystem type, "loi": loss on ignition (organic content), and "site": indicating that there were replications for each location.
+
+Cover data can be tricky to deal with: the observation process can be difficult to disentangle from the ecological process. [Korhonen et al. (2024)](https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.14437) discuss this to some extend, but there is a wide body of literature available on this issue. Some ecologists record presence-absences of species in subplots, and collate those to proportions at the plot-level. In that case, we might just as well model the data as binary responses, while accounting for pseudoreplication in the model, as it is not "truly" a cover process. We could do something similar with abundances; record them as percentages, or we could use a pin-point observation process. The point being, when it comes to percentages we have to think hard if a model truly based on percentages makes sense (besides the fact that there is usually loads of measurement error in percentages; the difference between 81-82% cover tends to be hard to guesstimate).
+
+In any case, the gllvm R-package offers various option for fitting percentage cover models. These usually focus on the way to deal with full absence or presence. There are few statistical distributions that can deal with data on a limied scale (0-1); the beta distribution being one of the few, but that does not include 0 or 1. Hence, we need to use a "Hurdle" model, or an ordered beta model; the details are covered in the aforementioned publication. We will just continue with an ordered beta model here.
+
+## Fitting a model-based ordination
+
+The modeling goes as before, with the `gllvm` function. There are three arguments for adding latent variables to the model, corresponding to the different ordinations: `num.lv`, `num.RR` and `num.lv.c` for unconstrained, constrained, and concurrent ordination, respectively. `num.lv` and `num.RR` as well as `num.RR` and `num.lv.c` can be combined without any problems (giving a "hybrid" ordination), but combining `num.lv` and `num.lv.c` should probably be avoided for technical reasons. Note that when you combine `num.lv` and `num.RR` in the same model, the residual axes (as represented by `num.lv`) are most likely not orthogonal to the covariates, so that they are difficult to interpret. This is different in (e.g.,) a CCA where the number of constrained axes always equals the number of predictors, which is not necessarily the case here. 
+
+There are different philosophies to fitting ordinations, some people prefer starting with an unconstrained ordination. My philosophy is that, if you are interested in species-environment relationships, doing an unconstrained ordination does not make much sense. However, for pedagogical reasons, we will start with an unconstrained ordination anyway. The following model may be a bit fussy with convergence: if you get a message that the model has converged to infinity, just re-run until it does work! (this is not always a valid strategy, but here it is OK). 
+
+
+Repeatedly re-running the model essentially what the `n.init` argument does in the below code. This is good practice, because different model runs often result in a (somewhat) different result. You can set `seed` to ensure you get the same model every time, or use `starting.val = "zero"` instead (the latter option might be suboptimal in many cases, see [Niku et al. (2019)](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0216129))
+
+```{r, cache = TRUE, warning=FALSE, message=FALSE}
+library(gllvm)
+TMB::openmp(parallel::detectCores()-1, autopar = TRUE, DLL = "gllvm")
+model1  <- gllvm(y = Y, num.lv = 2, family = "orderedBeta", n.nit = 10)
+```
+
+Everything from the first two practicals still applies: we can include random effects in `formula` or `row.eff` if we wish, we can fit the models in parallel or speed them up using the same tricks. We can visualize species associations via `corrplot` and `getResidualCor`. The latter are usually not our focus for ordination; instead we make an ordination diagram:
+
+```{r, fig.width = 10}
+ordiplot(model1, biplot = TRUE) # Yay, this looks terrible!
+```
+
+The "biplot" argument adds species into the plot. Sometimes, it can help to just display sites (or just species) because ordination diagrams tend to get a bit cluttered. There are many options for changing the ordination diagram, see `?ordiplot`. Sometimes, if you load the vegan package before you load the gllvm package, you can get an error. This is because vegan also has an `ordiplot` function that "overrules" gllvm in those instances.
+
+The ordination is at the observation-level, while we might want to have it at the site-level. There are two ways of doing that: the "lvCor" argument accepts (at the moment) a single variable for the level at which the (unconstrained) latent variables are defined. We can also use the methodology below ("randomB") and utilize `num.RR` for fitting a group-level unconstrained ordination ([see this vignette for more information](https://jenniniku.github.io/gllvm/articles/vignette6.html)). Here, we use `lvCor`:
+
+```{r, cache = TRUE, warning=FALSE, message=FALSE, fig.width = 10}
+model2  <- gllvm(y = Y, num.lv = 2, family = "orderedBeta", n.init = 10, lvCor = ~(1|site), studyDesign = X[,"site",drop=FALSE])
+gllvm::ordiplot(model2)
+```
+
+There are two functions that can help you to make your own ordination plot; `getLV` and `getLoadings` extract the coordinates of sites and species in the ordination. Note, that `ordiplot` rotates the ordination, so that if you make your own it might look slightly different. This has no consequences for its interpretation, and your results do not change. In model-based ordination, the axes have no "maximum variance" rotation, so that you can rotate them whatever way you want!
+
+Moving on; we want to add covariates. We are now in a place where we need to spend some serious brainpower thinking about our model formulation: we can include covariates in `row.eff`, `formula`, and `lv.formula`, all with different meanings. For now, we will focus on `lv.formula`: let us fit a constrained ordination.
+
+```{r, cache = TRUE, warning=FALSE, message=FALSE, fig.width = 10}
+model3  <- gllvm(y = Y, X = X, lv.formula = ~dist_int_veg+caco+slope+loi+grain_size_stand_f+years_since_n+gf, num.RR = 2, family = "orderedBeta", n.nit = 10)
+gllvm::ordiplot(model3)
+summary(model3)
+```
+
+Here, in this formulation, we treated the covariate effects in the ordination as fixed-effects. We can also treat them as random effects, by specifying either the "randomB" argument and/or writing `lv.formula` as a random effects formula. There are two purposes for this: 1) using only "randomB" can stabilize the canonical coefficients, which otherwise tend to suffer when the information content in the data is low or when there is collinearity of the covariates, 2) it induces correlation between species due to the environment, so that we can extract associations via `getEnvironCor`. Finally, the second option also allows us to (as in the first practical) incorporate correlation parameters between the random effects, but now in the ordination. These two options are formulated as:
+
+```{r, cache = TRUE, warning=FALSE, message=FALSE, fig.width = 10}
+model4  <- gllvm(y = Y, X = X, lv.formula = ~dist_int_veg+caco+slope+loi+grain_size_stand_f+years_since_n+gf, num.RR = 2, family = "orderedBeta", n.nit = 10, randomB = "P") # alternative is "LV"
+gllvm::ordiplot(model4)
+```
+
+and 
+
+```{r, cache = TRUE, warning=FALSE, message=FALSE, fig.width = 10}
+model5  <- gllvm(y = Y, X = X, lv.formula = ~(0+dist_int_veg+caco+slope+loi+grain_size_stand_f+years_since_n+gf|1), num.RR = 2, family = "orderedBeta", n.nit = 10, randomB = "P")
+summary(model5)
+gllvm::ordiplot(model5)
+corrplot::corrplot(getEnvironCor(model5), type = "lower", order = "AOE", diag = FALSE, tl.pos = "l", tl.cex = 0.2, addgrid.col = NA)
+```
+
+these might all produce very similar ordinations, but do not need to. Note that, by tradition, random effects in the same brackets will get correlation parameters. We can examine these with `summary`. When we switch to `num.lv.c`, residual species assocations will also be vailable (which are not when only using `num.RR`).
+
+Unlike in classical ordination methods, we can reconstruct species-specific responses to the environmental variables with `coefplot` for fixed effects and `randomCoefPlot` for random effects.
+
+# Part 1
+
+The goal is to get familiar with model-based ordination, and the output that the gllvm R-package provides in that context. There are a lot of different ordination that you can fit, each with different purposes. 
+
+1. Decide on an ordination: unconstrained, constrained, concurrent
+2. Try to find an ordination that you are "satisfied". Try (e.g.,) different number of latent variables, effects inside or outside the ordination (such as `row.eff`), and perhaps model selection via `AIC` or `BIC`
+3. Use `coefplot` or `randomCoefPlot` to examine the reconstructed species-specific effects
+
+We will discuss together once everyone has managed to fit some models.
