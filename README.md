@@ -14,7 +14,7 @@ GLLVM Workshop material for the Norwegian Oikos conference in 2025
 |13:30 - 14:15|[Model-based ordination](https://github.com/BertvanderVeen/Nof2025GLLVMworkshop/blob/main/Ordination/Ordination.pdf)                                | <!--different types of ordinations-->
 |14:15 - 14:30|Break                                                   |
 |14:30 - 15:15|[Practical 3](https://html-preview.github.io/?url=https://github.com/BertvanderVeen/Nof2025GLLVMworkshop/blob/main/Practicals/3Practical.html)
-|15:15 - 16:00|Multivariate analysis A-Z                               |
+|15:15 - 16:00|[Multivariate analysis A-Å](https://github.com/BertvanderVeen/Nof2025GLLVMworkshop/blob/main/analysis_A-Z/full_analysis.pdf)                               |
 |16:00 - 17:00|Buffer time/Questions/Discussion∕Supervised own analysis|
 |-------------|--------------------------------------------------------|
 
